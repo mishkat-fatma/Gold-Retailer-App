@@ -1,21 +1,12 @@
-import { useEffect } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { onAuthStateChanged,signOut, getAuth } from "firebase/auth";
+import { signOut, getAuth } from "firebase/auth";
 import { useTheme } from "../hooks/useTheme";
 
 export default function Dashboard() {
   const router = useRouter();
   const { color, setColor, ready } = useTheme();
-
-useEffect(() => {
-  const unsub = onAuthStateChanged(getAuth(), (user) => {
-    if (!user) router.replace("/login");
-  });
-  return unsub;
-}, []);
-
 
   if (!ready) return null;
 
