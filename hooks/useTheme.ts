@@ -5,32 +5,19 @@ import { db } from "../firebase";
 
 export function useTheme() {
   const [color, setColor] = useState("#f5c16c");
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) return;
 
-    const unsubAuth = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        setReady(true);
-        return;
-      }
+    const ref = doc(db, "users", user.uid, "preferences", "theme");
 
-      const ref = doc(db, "users", user.uid, "preferences", "theme");
-
-      const unsubSnap = onSnapshot(ref, (snap) => {
-        if (snap.exists()) {
-          setColor(snap.data().color);
-        } else {
-          setDoc(ref, { color: "#f5c16c" });
-        }
-        setReady(true);
-      });
-
-      return () => unsubSnap();
+    const unsub = onSnapshot(ref, (snap) => {
+      if (snap.exists()) setColor(snap.data().color);
     });
 
-    return () => unsubAuth();
+    return () => unsub();
   }, []);
 
   const updateColor = async (newColor: string) => {
@@ -46,5 +33,5 @@ export function useTheme() {
     );
   };
 
-  return { color, setColor: updateColor, ready };
+  return { color, setColor: updateColor };
 }

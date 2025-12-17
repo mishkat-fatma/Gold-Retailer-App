@@ -2,6 +2,8 @@
   "name": "karatpay-pages",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "homepage": ".",
+
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
@@ -9,6 +11,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "build": "expo export --platform web",
+    "serve": "npx serve dist --single",
     "lint": "expo lint"
   },
   "dependencies": {

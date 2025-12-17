@@ -6,9 +6,7 @@ import { useTheme } from "../hooks/useTheme";
 
 export default function Dashboard() {
   const router = useRouter();
-  const { color, setColor, ready } = useTheme();
-
-  if (!ready) return null;
+  const { color, setColor } = useTheme(); // 🔥 DO NOT BLOCK RENDER
 
   const COLORS = ["#f5c16c", "#6c9cff", "#2ecc71", "#e74c3c", "#9b59b6"];
 
@@ -16,13 +14,17 @@ export default function Dashboard() {
     <View style={styles.page}>
       <Text style={[styles.title, { color }]}>Karatpay</Text>
 
+      {/* THEME PICKER */}
       <View style={styles.colorRow}>
         {COLORS.map((c) => (
           <TouchableOpacity
             key={c}
             style={[
               styles.dot,
-              { backgroundColor: c, borderWidth: c === color ? 3 : 0 },
+              {
+                backgroundColor: c,
+                borderWidth: c === color ? 3 : 0,
+              },
             ]}
             onPress={() => setColor(c)}
           />
@@ -45,7 +47,7 @@ export default function Dashboard() {
           router.replace("/login");
         }}
       >
-        <Text style={{ color: "#ff6b6b", marginTop: 30 }}>Logout</Text>
+        <Text style={styles.logout}>Logout</Text>
       </TouchableOpacity>
     </View>
   );
@@ -63,6 +65,8 @@ const styles = StyleSheet.create({
     padding: 18,
     borderRadius: 14,
     marginBottom: 16,
+    alignItems: "center",
   },
   cardText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  logout: { color: "#ff6b6b", marginTop: 30, fontWeight: "600" },
 });

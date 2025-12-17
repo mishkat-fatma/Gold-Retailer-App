@@ -1,3 +1,5 @@
+import { Redirect } from "expo-router";
+import { getAuth } from "firebase/auth";
 import { useEffect, useRef, useState } from "react";
 import {
   View,
@@ -31,8 +33,13 @@ const DEFAULT_LABELS: Record<MetalKey, string> = {
 };
 
 export default function RateDisplay() {
+  const auth = getAuth();
+
+  if (!auth.currentUser) {
+    return <Redirect href="/login" />;
+  }
   const { rates, config } = useLiveRates();
-  const { color, ready } = useTheme();
+  const { color} = useTheme();
   const prevRates = useRef<any>(null);
 
   const [now, setNow] = useState(new Date());
