@@ -11,14 +11,13 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { signOut, getAuth } from "firebase/auth";
-import { useTheme } from "../hooks/useTheme";
 import { useEffect, useRef, useState } from "react";
 
 const { width, height } = Dimensions.get("window");
+const ACCENT = "#D4AF37";
 
 export default function Dashboard() {
   const router = useRouter();
-  const { color, setColor } = useTheme();
 
   /* ================= INTRO ================= */
   const [showIntro, setShowIntro] = useState(true);
@@ -98,8 +97,6 @@ export default function Dashboard() {
     });
   }, []);
 
-  const COLORS = ["#f5c16c", "#6c9cff", "#2ecc71", "#e74c3c", "#9b59b6"];
-
   /* ================= INTRO SCREEN ================= */
   if (showIntro) {
     return (
@@ -138,59 +135,38 @@ export default function Dashboard() {
         {
           opacity: dashOpacity,
           transform: [{ translateY: dashY }],
-          backgroundColor: "#070a12",
         },
       ]}
     >
       {/* NEON BACK WASH */}
       <View
         pointerEvents="none"
-        style={[
-          styles.neonWash,
-          { backgroundColor: color },
-        ]}
+        style={[styles.neonWash, { backgroundColor: ACCENT }]}
       />
 
-      <Text style={[styles.title, { color }]}>Karatpay</Text>
-
-      {/* THEME PICKER */}
-      <View style={styles.colorRow}>
-        {COLORS.map((c) => (
-          <TouchableOpacity
-            key={c}
-            style={[
-              styles.dot,
-              {
-                backgroundColor: c,
-                borderColor: c === color ? "#fff" : "transparent",
-              },
-            ]}
-            onPress={() => setColor(c)}
-          />
-        ))}
-      </View>
+      <Text style={[styles.title, { color: ACCENT }]}>KaratPay</Text>
 
       {/* RATE DISPLAY */}
-      <NeonCard color={color} onPress={() => router.push("/")}>
+      <NeonCard color={ACCENT} onPress={() => router.push("/")}>
         <Animated.View style={{ transform: [{ translateY: floatAnim }] }}>
-          <Ionicons name="stats-chart" size={78} color={color} />
+          <Ionicons name="stats-chart" size={78} color={ACCENT} />
         </Animated.View>
         <Text style={styles.cardTitle}>Rate Display</Text>
         <Text style={styles.cardDesc}>Live bullion prices</Text>
       </NeonCard>
 
-      {/* SETUP */}
-      <NeonCard color={color} onPress={() => router.push("/setup")}>
+      {/* RATE SETUP */}
+      <NeonCard color={ACCENT} onPress={() => router.push("/setup")}>
         <Animated.View style={{ transform: [{ translateY: floatAnim }] }}>
-          <Ionicons name="settings" size={78} color={color} />
+          <Ionicons name="settings" size={78} color={ACCENT} />
         </Animated.View>
         <Text style={styles.cardTitle}>Rate Setup</Text>
-        <Text style={styles.cardDesc}>Margins & branding</Text>
+        <Text style={styles.cardDesc}>Display, theme & margins</Text>
       </NeonCard>
 
       {/* LOGOUT */}
       <TouchableOpacity
-        style={[styles.logout, { backgroundColor: color }]}
+        style={[styles.logout, { backgroundColor: ACCENT }]}
         onPress={async () => {
           await signOut(getAuth());
           router.replace("/login");
@@ -261,6 +237,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     justifyContent: "center",
+    backgroundColor: "#070a12",
   },
 
   neonWash: {
@@ -276,21 +253,7 @@ const styles = StyleSheet.create({
     fontSize: 36,
     fontWeight: "900",
     textAlign: "center",
-    marginBottom: 28,
-  },
-
-  colorRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 16,
-    marginBottom: 34,
-  },
-
-  dot: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 3,
+    marginBottom: 36,
   },
 
   card: {

@@ -10,17 +10,15 @@ import {
   Share,
   Image,
   Dimensions,
+  Alert
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLiveRates } from "../hooks/useLiveRates";
-import { useTheme } from "../hooks/useTheme";
 
 const { width } = Dimensions.get("window");
 
-/* ================= TYPES ================= */
 type MetalKey = "gold999" | "gold916" | "silver999" | "silver925";
 
-/* ================= CONSTANTS ================= */
 const METALS: MetalKey[] = [
   "gold999",
   "gold916",
@@ -29,22 +27,70 @@ const METALS: MetalKey[] = [
 ];
 
 const DEFAULT_LABELS: Record<MetalKey, string> = {
-  gold999: "24K Gold",
-  gold916: "22K Gold",
-  silver999: "Pure Silver",
-  silver925: "925 Silver",
+  gold999: "24K Gold (999)",
+  gold916: "22K Gold (916)",
+  silver999: "Silver (999)",
+  silver925: "Silver (925)",
 };
 
-export default function RateDisplay() {
+export default function RateDisplay({
+  previewConfig,
+}: {
+  previewConfig?: any;
+}) {
+
   const auth = getAuth();
-  if (!auth.currentUser) return <Redirect href="/login" />;
+  if (!auth.currentUser && !previewConfig){
+  return <Redirect href="/login" />;
+  }
 
-  const { rates, config } = useLiveRates();
-  const { color } = useTheme();
-  const prevRates = useRef<any>(null);
+const isPreview = !!previewConfig;
+const live = useLiveRates();
 
-  const [now, setNow] = useState(new Date());
 
+
+const computeRatesFromConfig = (base: any, cfg: any) => {
+  if (!base || !cfg) return null;
+
+  const applyMaking = (price: number, key: MetalKey) => {
+    const m = cfg.making?.[key];
+    if (!m || !m.enabled) return price;
+
+    return m.type === "percent"
+      ? price + price * (m.value / 100)
+      : price + m.value;
+  };
+
+  return {
+    gold999: applyMaking(base.gold999 + (cfg.margins?.gold999 || 0), "gold999"),
+    gold916: applyMaking(base.gold916 + (cfg.margins?.gold916 || 0), "gold916"),
+    silver999: applyMaking(base.silver999 + (cfg.margins?.silver999 || 0), "silver999"),
+    silver925: applyMaking(base.silver925 + (cfg.margins?.silver925 || 0), "silver925"),
+  };
+};
+
+const config = isPreview ? previewConfig : live.config;
+
+const rates = isPreview
+  ? computeRatesFromConfig(live.baseRates, previewConfig)
+  : live.rates;
+
+const effectiveConfig = isPreview
+  ? { ...config, frozen: false }
+  : config;
+
+
+
+
+
+
+
+const prevRates = useRef<any>(null);
+const [now, setNow] = useState(new Date());
+
+
+  
+  /* ================= CLOCK ================= */
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
@@ -54,270 +100,406 @@ export default function RateDisplay() {
     if (rates) prevRates.current = rates;
   }, [rates]);
 
-  const onShare = async () => {
-    if (!rates) return;
+  if (!config || !rates) {
+  return (
+    <View style={styles.center}>
+      <Text style={{ color: "#fff" }}>
+        {isPreview
+          ? "Waiting for live price…"
+          : "Loading rates…"}
+      </Text>
+    </View>
+  );
+}
 
-    let text = `Live Bullion Rates\n\n`;
-    METALS.forEach((k) => {
-      text += `${config?.labels?.[k] || DEFAULT_LABELS[k]}: ₹${rates[k].toFixed(
-        2
-      )}\n`;
-    });
 
-    if (config?.making) {
-      text += `\nMaking Charges: ${
-        config.making.type === "percent"
-          ? `${config.making.value}%`
-          : `₹${config.making.value}/g`
-      }`;
-    }
 
-    await Share.share({ message: text });
-  };
 
-  if (!rates) {
-    return (
-      <View style={styles.center}>
-        <Text style={{ color: "#fff" }}>Loading live rates…</Text>
-      </View>
-    );
-  }
+
+  const enabledNotifications =
+  Array.isArray(effectiveConfig.notifications)
+    ? effectiveConfig.notifications.filter(
+        (n: any) => n.enabled && n.text?.trim()
+      )
+    : [];
+
+
+
+  /* ================= CONFIG ================= */
+  const d = effectiveConfig.display || {};
+  const c = effectiveConfig.displayColors || {};
+  const card = effectiveConfig.card || {};
+
+
+  const precision = d.precision ?? 2;
+
+
+const getMakingText = (key: MetalKey) => {
+  if (!effectiveConfig || !effectiveConfig.making) return null;
+
+  const m = effectiveConfig.making[key];
+  if (!m || !m.enabled || m.value <= 0) return null;
+
+  const label =
+    effectiveConfig.makingLabels?.[key]?.trim() || "Making Charges";
+
+  return m.type === "percent"
+    ? `+ ${label}: ${m.value}%`
+    : `+ ${label}: ₹${m.value}/g`;
+};
+
+
+
+
+
+
+  const densityGap =
+    d.density === "compact" ? 10 : d.density === "spacious" ? 26 : 18;
+
+  const alignItems =
+    d.align === "left"
+      ? "flex-start"
+      : d.align === "right"
+      ? "flex-end"
+      : "center";
+
+  const font =
+    d.font === "serif"
+      ? "serif"
+      : d.font === "classic"
+      ? "sans-serif"
+      : "default";
+
+  /* ================= SHARE ================= */
+ const onShare = async () => {
+  const user = getAuth().currentUser;
+  if (!user) return;
+
+  const url = `https://gold-retailer-app.vercel.app/view/${user.uid}`;
+
+  await Share.share({
+    message: `Check live gold & silver rates:\n${url}`,
+  });
+};
+
+
 
   return (
     <ScrollView
-      style={[styles.page, { backgroundColor: "#070a12" }]}
+      style={[
+        styles.page,
+        { backgroundColor: c.background || "#070a12" },
+      ]}
       contentContainerStyle={{ paddingBottom: 40 }}
       showsVerticalScrollIndicator={false}
     >
       {/* ================= HEADER ================= */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          { alignItems, marginBottom: densityGap },
+        ]}
+      >
         <View>
-          <Text style={[styles.headerTitle, { color }]}>
+          <Text
+            style={[
+              styles.headerTitle,
+              {
+                color: c.text || "#fff",
+                fontFamily: font,
+              },
+            ]}
+          >
             Live Bullion Rates
           </Text>
-          <Text style={styles.time}>
-            Updated: {now.toLocaleTimeString()}
-          </Text>
+
+          {d.showTime !== false && (
+            <Text style={[styles.time, { color: c.text || "#aaa" }]}>
+              Updated: {now.toLocaleTimeString()}
+            </Text>
+          )}
         </View>
 
         <TouchableOpacity onPress={onShare}>
-          <Ionicons name="share-social" size={24} color={color} />
+          <Ionicons
+            name="share-social"
+            size={22}
+            color={c.price || "#D4AF37"}
+          />
         </TouchableOpacity>
       </View>
 
       {/* ================= BRANDING ================= */}
-      {(config?.shopName || config?.logoUrl) && (
-        <View style={styles.branding}>
-          {config?.logoUrl && (
-            <Image source={{ uri: config.logoUrl }} style={styles.logo} />
+      {d.showShopName !== false && (effectiveConfig.shopName || effectiveConfig.logoUrl) && (
+        <View
+          style={[
+            styles.branding,
+            { justifyContent: alignItems },
+          ]}
+        >
+          {effectiveConfig.logoUrl && (
+            <Image
+              source={{ uri: effectiveConfig.logoUrl }}
+              style={styles.logo}
+            />
           )}
-          <Text style={[styles.shopName, { textShadowColor: color }]}>
-            {config?.shopName || "Jewellery Store"}
+          <Text
+            style={[
+              styles.shopName,
+              {
+                color: c.text || "#fff",
+                fontFamily: font,
+                textAlign: d.align || "center",
+              },
+            ]}
+          >
+            {effectiveConfig.shopName}
           </Text>
         </View>
       )}
 
-      {/* ================= RATE GRID ================= */}
-      <View style={styles.grid}>
+      {/* ================= RATE CARDS ================= */}
+      <View style={{ gap: densityGap }}>
         {METALS.map((key) => {
-          const current = rates[key];
+          if (d.rows?.[key] === false) return null;
+
+          const current = rates?.[key];
+          if (current == null) return null;
+
           const prev = prevRates.current?.[key];
           const diff = prev !== undefined ? current - prev : 0;
 
           return (
             <View
-              key={key}
               style={[
                 styles.card,
                 {
-                  borderColor: color,
-                  shadowColor: color,
+                  backgroundColor:
+                    d.layout === "minimal" ? "transparent" : "#111622",
+                  borderRadius: card.radius ?? 20,
+                  borderColor: c.cardBorder || "transparent",
+                  borderWidth: c.cardBorder ? 1 : 0,
+                  padding: densityGap,
                 },
               ]}
             >
-              <Text style={styles.metal}>
-                {config?.labels?.[key] || DEFAULT_LABELS[key]}
+              <Text
+                style={[
+                  styles.metal,
+                  {
+                    color: c.text || "#aaa",
+                    fontFamily: font,
+                  },
+                ]}
+              >
+                {effectiveConfig.labels?.[key] || DEFAULT_LABELS[key]}
               </Text>
 
-              <Text style={[styles.price, { color }]}>
-                ₹{current.toFixed(2)}
+              <Text
+                style={[
+                  styles.price,
+                  {
+                    color: c.price || "#D4AF37",
+                    fontFamily: font,
+                  },
+                ]}
+              >
+                ₹{current.toFixed(precision)}
               </Text>
+
+              {getMakingText(key) && (
+                <Text style={styles.making}>
+                  {getMakingText(key)}
+                </Text>
+              )}
+
 
               {diff !== 0 && (
                 <Text
                   style={[
                     styles.change,
-                    diff > 0 ? styles.up : styles.down,
+                    { color: diff > 0 ? "#2ecc71" : "#e74c3c" },
                   ]}
                 >
-                  {diff > 0 ? "▲" : "▼"} {Math.abs(diff).toFixed(2)}
-                </Text>
-              )}
-
-              {config?.making && (
-                <Text style={styles.making}>
-                  Making:{" "}
-                  {config.making.type === "percent"
-                    ? `${config.making.value}%`
-                    : `₹${config.making.value}/g`}
+                  {diff > 0 ? "▲" : "▼"}{" "}
+                  {Math.abs(diff).toFixed(precision)}
                 </Text>
               )}
             </View>
           );
         })}
       </View>
-
       {/* ================= NOTIFICATIONS ================= */}
-      {config?.notifications
-        ?.filter((n: any) => n.enabled && n.text)
-        .map((n: any, i: number) => (
-          <View
-            key={i}
-            style={[styles.notice, { borderLeftColor: color }]}
-          >
-            <Ionicons
-              name="notifications"
-              size={16}
-              color={color}
-              style={{ marginRight: 8 }}
-            />
-            <Text style={styles.noticeText}>{n.text}</Text>
-          </View>
-        ))}
+{enabledNotifications.length > 0 && (
+  <View style={styles.notificationsWrap}>
+    {enabledNotifications.map((item: any, index: number) => (
+      <View key={index} style={styles.notificationCard}>
+        <Ionicons
+          name="notifications"
+          size={16}
+          color={c.price || "#D4AF37"}
+        />
+        <Text
+          style={[
+            styles.notificationText,
+            { color: c.text || "#fff" },
+          ]}
+        >
+          {item.text}
+        </Text>
+      </View>
+    ))}
+  </View>
+)}
 
       {/* ================= FREEZE ================= */}
-      {config?.frozen && (
+      {effectiveConfig.frozen && (
         <View style={styles.freeze}>
-          <Ionicons name="snow" size={16} color={color} />
-          <Text style={{ color, fontWeight: "800" }}>
+          <Ionicons
+            name="snow"
+            size={16}
+            color={c.price || "#D4AF37"}
+          />
+          <Text
+            style={{
+              color: c.price || "#D4AF37",
+              fontWeight: "800",
+            }}
+          >
             Rates Frozen
           </Text>
         </View>
       )}
+
+      {/* ================= FOOTER CONTACT ================= */}
+{effectiveConfig.contact &&
+  (effectiveConfig.contact.address ||
+    effectiveConfig.contact.email ||
+    effectiveConfig.contact.phones?.some(Boolean)) && (
+    <View style={styles.footer}>
+      <View style={styles.footerBlock}>
+        <Text style={styles.footerTitle}>Address</Text>
+        <Text style={styles.footerText}>
+          {effectiveConfig.contact.address}
+        </Text>
+      </View>
+
+      <View style={styles.footerBlock}>
+        <Text style={styles.footerTitle}>Phone</Text>
+        {effectiveConfig.contact.phones
+          ?.filter(Boolean)
+          .map((p: string, i: number) => (
+            <Text key={i} style={styles.footerText}>
+              {p}
+            </Text>
+          ))}
+      </View>
+
+      <View style={styles.footerBlock}>
+        <Text style={styles.footerTitle}>Email</Text>
+        <Text style={styles.footerText}>
+          {effectiveConfig.contact.email}
+        </Text>
+      </View>
+    </View>
+)}
     </ScrollView>
   );
 }
 
+
 /* ================= STYLES ================= */
+
 const styles = StyleSheet.create({
   page: {
     flex: 1,
     padding: 18,
   },
+  notificationsWrap: {
+  marginTop: 30,
+  gap: 12,
+},
+
+notificationCard: {
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 10,
+  paddingVertical: 12,
+  paddingHorizontal: 14,
+  borderRadius: 14,
+  backgroundColor: "#121620",
+  borderWidth: 1,
+  borderColor: "transparent",
+},
+
+notificationText: {
+  flex: 1,
+  fontSize: 14,
+  fontWeight: "600",
+},
+
+  making: {
+  marginTop: 4,
+  fontSize: 13,
+  fontWeight: "600",
+  color: "#9aa0aa",
+},
+
   center: {
     flex: 1,
     backgroundColor: "#070a12",
     justifyContent: "center",
     alignItems: "center",
   },
-
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
   },
-
   headerTitle: {
     fontSize: 22,
     fontWeight: "900",
-    letterSpacing: 0.6,
   },
-
   time: {
-    color: "#9aa0aa",
     fontSize: 12,
     marginTop: 4,
   },
-
-  /* BRANDING */
   branding: {
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 16,
-    marginBottom: 28,
+    marginBottom: 24,
   },
-
   logo: {
-    width: 110,
-    height: 110,
-    borderRadius: 24,
-    borderWidth: 2,
-    borderColor: "#222",
-  },
+  width: "100%",
+  maxWidth: 520,        
+  height: 260,          
+  resizeMode: "contain",
+  alignSelf: "center",
+  marginBottom: 16,
+},
+
 
   shopName: {
-    color: "#fff",
-    fontSize: 34,
+    fontSize: 30,
     fontWeight: "900",
-    letterSpacing: 1,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 18,
   },
-
-  /* GRID */
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-
   card: {
-    width: width > 700 ? "48%" : "100%",
-    backgroundColor: "#111622",
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 18,
-    borderWidth: 1,
-    shadowOpacity: 0.35,
-    shadowRadius: 18,
-    elevation: 10,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
   },
-
   metal: {
-    color: "#9aa0aa",
     fontSize: 14,
     fontWeight: "600",
   },
-
   price: {
     fontSize: 34,
     fontWeight: "900",
-    marginTop: 12,
+    marginTop: 10,
   },
-
   change: {
     marginTop: 6,
     fontSize: 13,
     fontWeight: "700",
   },
-
-  up: { color: "#2ecc71" },
-  down: { color: "#e74c3c" },
-
-  making: {
-    color: "#9aa0aa",
-    fontSize: 12,
-    marginTop: 8,
-  },
-
-  notice: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#1c1f26",
-    padding: 14,
-    borderRadius: 14,
-    marginTop: 12,
-    borderLeftWidth: 4,
-  },
-
-  noticeText: {
-    color: "#fff",
-    fontSize: 13,
-    flex: 1,
-  },
-
   freeze: {
     marginTop: 28,
     flexDirection: "row",
@@ -325,4 +507,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
+  footer: {
+  marginTop: 40,
+  paddingTop: 20,
+  borderTopWidth: 1,
+  borderColor: "#1f2430",
+  gap: 20,
+},
+
+footerBlock: {
+  gap: 6,
+},
+
+footerTitle: {
+  color: "#9aa0aa",
+  fontSize: 13,
+  fontWeight: "700",
+},
+
+footerText: {
+  color: "#fff",
+  fontSize: 14,
+  lineHeight: 20,
+},
+
 });

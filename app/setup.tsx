@@ -21,7 +21,12 @@ import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { Platform } from "react-native";
 import { getAuth } from "firebase/auth";
+import { Dimensions } from "react-native";
+import RateDisplay from "./index"; 
+import { Modal } from "react-native";
 
+
+const { width } = Dimensions.get("window");
 
 
 /* ================= TYPES ================= */
@@ -32,16 +37,52 @@ type NotificationItem = {
   enabled: boolean;
 };
 
+
 type Config = {
   shopName: string;
   logoUrl: string;
   labels: Record<MetalKey, string>;
   margins: Record<MetalKey, number>;
-  making: null | { type: "percent" | "perGram"; value: number };
+  making: Record<
+  MetalKey,
+  {
+    enabled: boolean;
+    type: "percent" | "perGram";
+    value: number;
+  }
+>;
+ makingLabels: Record<MetalKey, string>;
+
+  displayColors: {
+  background: string;
+  text: string;
+  price: string;
+  cardBorder: string;
+};
+
   notifications: NotificationItem[];
+
+  contact: {
+    address: string;
+    phones: string[];
+    email: string;
+  };
   frozen: boolean;
   frozenAt: any | null;
+
+  
 };
+
+//  Normalize making (handles old Firestore data)
+const normalizeMaking = (making: any) => {
+  return {
+    gold999: making?.gold999 ?? { enabled: false, type: "percent", value: 0 },
+    gold916: making?.gold916 ?? { enabled: false, type: "percent", value: 0 },
+    silver999: making?.silver999 ?? { enabled: false, type: "perGram", value: 0 },
+    silver925: making?.silver925 ?? { enabled: false, type: "perGram", value: 0 },
+  };
+};
+
 
 /* ================= CONSTANTS ================= */
 const METALS: MetalKey[] = [
@@ -58,36 +99,99 @@ const MARGIN_UNIT: Record<MetalKey, string> = {
   silver925: "₹ / g",
 };
 
+const MARGIN_STEP: Record<MetalKey, number> = {
+  gold999: 50,
+  gold916: 50,
+  silver999: 10,
+  silver925: 10,
+};
+
 /* ================= DEFAULT CONFIG ================= */
 const DEFAULT_CONFIG: Config = {
   shopName: "",
   logoUrl: "",
+
   labels: {
     gold999: "24K Gold (999)",
     gold916: "22K Gold (916)",
     silver999: "Silver Pure",
     silver925: "Silver Jewellery",
   },
+
   margins: {
     gold999: 0,
     gold916: 0,
     silver999: 0,
     silver925: 0,
   },
-  making: null,
+
+  making: {
+    gold999: { enabled: false, type: "percent", value: 0 },
+    gold916: { enabled: false, type: "percent", value: 0 },
+    silver999: { enabled: false, type: "perGram", value: 0 },
+    silver925: { enabled: false, type: "perGram", value: 0 },
+  },
+  makingLabels: {
+  gold999: "Making Charges",
+  gold916: "Making Charges",
+  silver999: "Making Charges",
+  silver925: "Making Charges",
+},
+
   notifications: [
     { text: "", enabled: false },
     { text: "", enabled: false },
     { text: "", enabled: false },
   ],
+  displayColors: {
+  background: "#000000",
+  text: "#FFFFFF",
+  price: "#D4AF37",
+  cardBorder: "#2a2d35",
+},
+    contact: {
+    address: "",
+    phones: [""],
+    email: "",
+  },
+
+
   frozen: false,
   frozenAt: null,
+
 };
+
 
 export default function Setup() {
   const [config, setConfig] = useState<Config>(DEFAULT_CONFIG);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  const COLOR_PRESETS = [
+  {
+    name: "Elegant Dark",
+    background: "#0B0B0B",
+    text: "#FFFFFF",
+    price: "#D4AF37",
+    cardBorder: "#2A2A2A",
+  },
+  {
+    name: "Royal Blue",
+    background: "#0A1A2F",
+    text: "#EAF0FF",
+    price: "#4DA3FF",
+    cardBorder: "#1F3A5F",
+  },
+  {
+    name: "Deep Purple",
+    background: "#120018",
+    text: "#F5E9FF",
+    price: "#B388FF",
+    cardBorder: "#3B145F",
+  },
+];
+
   const router = useRouter();
 
   /* ===== COLLAPSE STATE (UI ONLY) ===== */
@@ -159,50 +263,80 @@ useEffect(() => {
   const ref = doc(db, "users", user.uid, "config", "shop");
 
   const unsub = onSnapshot(ref, (snap) => {
-    if (saving) return; // 🔥 THIS IS THE KEY LINE
 
-    if (snap.exists()) {
-      setConfig({ ...DEFAULT_CONFIG, ...(snap.data() as Config) });
-    } else {
-      setConfig(DEFAULT_CONFIG);
-    }
 
-    setLoading(false);
-  });
+  if (snap.exists()) {
+    const data = snap.data() as Partial<Config>;
 
+    setConfig({
+  ...DEFAULT_CONFIG,
+  ...data,
+
+  notifications: data.notifications ?? DEFAULT_CONFIG.notifications,
+
+  making: normalizeMaking(data.making),
+
+  // preserve saved making labels
+  makingLabels:
+    data.makingLabels ?? DEFAULT_CONFIG.makingLabels,
+});
+
+  } else {
+    setConfig(DEFAULT_CONFIG);
+  }
+
+  setLoading(false);
+});
+
+
+  // ✅ CLEANUP MUST BE HERE
   return () => unsub();
-}, [saving]);
+}, []);
+
+
+
 
 
 
   /* ================= SAVE ================= */
-const save = async () => {
+const save = () => {
   const auth = getAuth();
   const user = auth.currentUser;
   if (!user) return;
 
-  try {
-    setSaving(true);
+  // 🔓 Unlock UI immediately
+  setSaving(false);
 
-    // 🚀 Navigate FIRST (instant UX)
-    router.replace("/dashboard");
+  // 🚀 Navigate immediately
+  router.replace("/dashboard");
 
-    // 🔄 Save in background
-    await setDoc(
-      doc(db, "users", user.uid, "config", "shop"),
-      {
-        ...config,
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
-  } catch {
+  // 🔄 Save in background (DO NOT await)
+  setDoc(
+    doc(db, "users", user.uid, "config", "shop"),
+    {
+      ...config,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  ).catch(() => {
     Alert.alert("Error", "Failed to save settings");
-    setSaving(false);
-  }
+  });
 };
+  /* ================= RANDOM COLORS ================= */
+const randomHex = () =>
+  "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0");
 
-
+const applyRandomTheme = () => {
+  setConfig({
+    ...config,
+    displayColors: {
+      background: randomHex(),
+      text: randomHex(),
+      price: randomHex(),
+      cardBorder: randomHex(),
+    },
+  });
+};
 
   /* ===== CARD HEADER ===== */
   const CardHeader = ({
@@ -224,8 +358,12 @@ const save = async () => {
   );
 
   return (
-    <ScrollView style={styles.page} contentContainerStyle={{ paddingBottom: 40 }}>
-
+    <>
+    <ScrollView 
+     style={styles.page} 
+     contentContainerStyle={{ paddingBottom: 40 }}
+    >
+    
       {/* ================= BRANDING ================= */}
  <View style={styles.card}>
         <Text style={styles.section}>Shop Branding</Text>
@@ -318,7 +456,7 @@ const save = async () => {
                         ...config,
                         margins: {
                           ...config.margins,
-                          [key]: Math.max(0, config.margins[key] - 1),
+                          [key]: Math.max(0, config.margins[key] - MARGIN_STEP[key]),
                         },
                       })
                     }
@@ -348,7 +486,7 @@ const save = async () => {
                         ...config,
                         margins: {
                           ...config.margins,
-                          [key]: config.margins[key] + 1,
+                          [key]: config.margins[key] + MARGIN_STEP[key],
                         },
                       })
                     }
@@ -362,62 +500,114 @@ const save = async () => {
         )}
       </View>
 
-      {/* ================= MAKING ================= */}
-      <View style={styles.card}>
-        <CardHeader title="Making Charges" section="making" />
-        {open.making && (
-          <>
-            <View style={styles.row}>
-              <TouchableOpacity
-                style={[
-                  styles.toggle,
-                  config.making?.type === "percent" && styles.active,
-                ]}
-                onPress={() =>
-                  setConfig({
-                    ...config,
-                    making: { type: "percent", value: 0 },
-                  })
-                }
-              >
-                <Text style={styles.toggleText}>%</Text>
-              </TouchableOpacity>
+      {/* ================= MAKING (PER METAL) ================= */}
+<View style={styles.card}>
+  <Text style={styles.section}>Making Charges (Per Metal)</Text>
 
-              <TouchableOpacity
-                style={[
-                  styles.toggle,
-                  config.making?.type === "perGram" && styles.active,
-                ]}
-                onPress={() =>
-                  setConfig({
-                    ...config,
-                    making: { type: "perGram", value: 0 },
-                  })
-                }
-              >
-                <Text style={styles.toggleText}>₹/g</Text>
-              </TouchableOpacity>
-            </View>
+  {METALS.map((key) => {
+  const item = config.making[key];
 
-            {config.making && (
-              <TextInput
-                style={styles.input}
-                keyboardType="numeric"
-                value={String(config.making.value)}
-                onChangeText={(v) =>
-                  setConfig({
-                    ...config,
-                    making: {
-                      ...config.making!,
-                      value: Number(v) || 0,
-                    },
-                  })
-                }
-              />
-            )}
-          </>
-        )}
+  return (
+    <View key={key} style={{ marginBottom: 16 }}>
+
+      {/* ✅ MAKING LABEL INPUT — MUST BE INSIDE RETURN */}
+      <TextInput
+        style={styles.input}
+        placeholder="Making charge label (eg: Labour / Wastage)"
+        value={config.makingLabels[key]}
+        onChangeText={(v) =>
+          setConfig({
+            ...config,
+            makingLabels: {
+              ...config.makingLabels,
+              [key]: v,
+            },
+          })
+        }
+      />
+
+      <View style={styles.row}>
+        <Text style={styles.label}>{config.labels[key]}</Text>
+        <Switch
+          value={item.enabled}
+          onValueChange={(v) =>
+            setConfig({
+              ...config,
+              making: {
+                ...config.making,
+                [key]: { ...item, enabled: v },
+              },
+            })
+          }
+        />
       </View>
+
+      {item.enabled && (
+        <>
+          <View style={[styles.row, { marginTop: 8 }]}>
+            <TouchableOpacity
+              style={[
+                styles.toggle,
+                item.type === "percent" && styles.active,
+              ]}
+              onPress={() =>
+                setConfig({
+                  ...config,
+                  making: {
+                    ...config.making,
+                    [key]: { ...item, type: "percent" },
+                  },
+                })
+              }
+            >
+              <Text style={styles.toggleText}>%</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.toggle,
+                item.type === "perGram" && styles.active,
+              ]}
+              onPress={() =>
+                setConfig({
+                  ...config,
+                  making: {
+                    ...config.making,
+                    [key]: { ...item, type: "perGram" },
+                  },
+                })
+              }
+            >
+              <Text style={styles.toggleText}>₹/g</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TextInput
+            style={styles.input}
+            keyboardType="numeric"
+            placeholder="Enter making charge"
+            value={String(item.value)}
+            onChangeText={(v) =>
+              setConfig({
+                ...config,
+                making: {
+                  ...config.making,
+                  [key]: {
+                    ...item,
+                    value: Number(v) || 0,
+                  },
+                },
+              })
+            }
+          />
+        </>
+      )}
+    </View>
+  );
+})}
+
+</View>
+
 
       {/* ================= NOTIFICATIONS ================= */}
       <View style={styles.card}>
@@ -452,6 +642,157 @@ const save = async () => {
             </View>
           ))}
       </View>
+      {/* ================= RANDOM COLOR ================= */}
+      <View style={styles.card}>
+  <Text style={styles.section}>Display Colors</Text>
+
+  <Text style={styles.label}>Background Color</Text>
+  <TextInput
+    style={styles.input}
+    value={config.displayColors.background}
+    onChangeText={(v) =>
+      setConfig({
+        ...config,
+        displayColors: { ...config.displayColors, background: v },
+      })
+    }
+  />
+
+  <Text style={styles.label}>Text Color</Text>
+  <TextInput
+    style={styles.input}
+    value={config.displayColors.text}
+    onChangeText={(v) =>
+      setConfig({
+        ...config,
+        displayColors: { ...config.displayColors, text: v },
+      })
+    }
+  />
+
+  <Text style={styles.label}>Price Color</Text>
+  <TextInput
+    style={styles.input}
+    value={config.displayColors.price}
+    onChangeText={(v) =>
+      setConfig({
+        ...config,
+        displayColors: { ...config.displayColors, price: v },
+      })
+    }
+  />
+
+  <Text style={[styles.label, { marginTop: 12 }]}>Quick Presets</Text>
+
+  <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+    {COLOR_PRESETS.map((p) => (
+      <TouchableOpacity
+        key={p.name}
+        style={styles.presetBtn}
+        onPress={() =>
+          setConfig({
+            ...config,
+            displayColors: {
+              background: p.background,
+              text: p.text,
+              price: p.price,
+              cardBorder: p.cardBorder,
+            },
+          })
+        }
+      >
+        <Text style={styles.presetText}>{p.name}</Text>
+      </TouchableOpacity>
+    ))}
+  </View>
+
+  <TouchableOpacity
+    style={[styles.presetBtn, { borderColor: "#D4AF37" }]}
+    onPress={applyRandomTheme}
+  >
+    <Text style={styles.presetText}>Random Theme</Text>
+  </TouchableOpacity>
+</View>
+
+{/* ================= CONTACT DETAILS ================= */}
+<View style={styles.card}>
+  <Text style={styles.section}>Contact Details (Footer)</Text>
+
+  <Text style={styles.label}>Address</Text>
+  <TextInput
+    style={[styles.input, { height: 80 }]}
+    multiline
+    placeholder="Shop address"
+    value={config.contact.address}
+    onChangeText={(v) =>
+      setConfig({
+        ...config,
+        contact: { ...config.contact, address: v },
+      })
+    }
+  />
+
+  <Text style={styles.label}>Phone Numbers</Text>
+  {config.contact.phones.map((p, i) => (
+    <TextInput
+      key={i}
+      style={styles.input}
+      placeholder={`Phone ${i + 1}`}
+      keyboardType="phone-pad"
+      value={p}
+      onChangeText={(v) => {
+        const copy = [...config.contact.phones];
+        copy[i] = v;
+        setConfig({
+          ...config,
+          contact: { ...config.contact, phones: copy },
+        });
+      }}
+    />
+  ))}
+
+  <TouchableOpacity
+    onPress={() =>
+      setConfig({
+        ...config,
+        contact: {
+          ...config.contact,
+          phones: [...config.contact.phones, ""],
+        },
+      })
+    }
+  >
+    <Text style={{ color: "#6c4ef6", marginBottom: 10 }}>
+      + Add phone
+    </Text>
+  </TouchableOpacity>
+
+  <Text style={styles.label}>Email</Text>
+  <TextInput
+    style={styles.input}
+    placeholder="Email"
+    keyboardType="email-address"
+    value={config.contact.email}
+    onChangeText={(v) =>
+      setConfig({
+        ...config,
+        contact: { ...config.contact, email: v },
+      })
+    }
+  />
+</View>
+
+
+      {/* ================= PREVIEW ================= */}
+      <TouchableOpacity
+  style={[
+    styles.saveBtn,
+    { backgroundColor: "#1c1f26", marginBottom: 12 },
+  ]}
+  onPress={() => setPreviewOpen(true)}
+>
+  <Text style={styles.saveText}>Live Preview</Text>
+</TouchableOpacity>
 
       {/* ================= SAVE ================= */}
       <TouchableOpacity
@@ -463,9 +804,31 @@ const save = async () => {
           {saving ? "Saving..." : "Save & Go to Dashboard"}
         </Text>
       </TouchableOpacity>
-    </ScrollView>
-  );
+      </ScrollView> 
+
+      {/* ================= MODAL ================= */}
+      <Modal visible={previewOpen} animationType="slide">
+        <RateDisplay previewConfig={config} />
+
+        <TouchableOpacity
+          style={[
+           styles.saveBtn,
+           { margin: 16, backgroundColor: "#e74c3c" },
+          ]}
+          onPress={() => setPreviewOpen(false)}
+      >
+          <Text style={styles.saveText}>Close Preview</Text>
+        </TouchableOpacity>
+      </Modal>
+  </>
+);
+
+      
 }
+ 
+
+
+
 
 /* ================= STYLES ================= */
 const styles = StyleSheet.create({
@@ -532,11 +895,15 @@ uploadText: {
 
 
   logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
-    marginTop: 6,
-  },
+  width: "100%",
+  maxWidth: Math.min(140, width * 0.4),
+  height: 70,
+  resizeMode: "contain",
+  alignSelf: "flex-start",
+  marginTop: 6,
+},
+
+
 
   row: {
     flexDirection: "row",
@@ -624,5 +991,23 @@ removeText: {
   fontSize: 13,
   fontWeight: "600",
 },
+
+presetBtn: {
+  paddingVertical: 10,
+  paddingHorizontal: 14,
+  borderRadius: 10,
+  backgroundColor: "#1c1f26",
+  borderWidth: 1,
+  borderColor: "#2a2d35",
+  marginRight: 8,
+  marginTop: 8,
+},
+
+presetText: {
+  color: "#fff",
+  fontSize: 13,
+  fontWeight: "600",
+},
+
 
 });
