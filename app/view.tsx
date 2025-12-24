@@ -2,11 +2,11 @@ import { useLocalSearchParams } from "expo-router";
 import { View, Text } from "react-native";
 import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "../../firebase";
-import RateDisplay from "../index";
+import { db } from "../firebase";
+import RateDisplay from "./index";
 
 export default function PublicRateView() {
-  const { shopId } = useLocalSearchParams<{ shopId: string }>();
+  const { shopId } = useLocalSearchParams<{ shopId?: string }>();
   const [config, setConfig] = useState<any>(null);
 
   useEffect(() => {
@@ -23,16 +23,17 @@ export default function PublicRateView() {
     return () => unsub();
   }, [shopId]);
 
+  if (!shopId) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text>Invalid link</Text>
+      </View>
+    );
+  }
+
   if (!config) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "#000",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      <View style={{ flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" }}>
         <Text style={{ color: "#fff" }}>Loading live rates…</Text>
       </View>
     );

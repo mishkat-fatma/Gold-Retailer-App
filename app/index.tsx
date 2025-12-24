@@ -175,7 +175,7 @@ const getMakingText = (key: MetalKey) => {
   const user = getAuth().currentUser;
   if (!user) return;
 
-  const url = `https://gold-retailer-app.vercel.app/view/${user.uid}`;
+  const url = `https://gold-retailer-app.vercel.app/view?shopId${user.uid}`;
 
   await Share.share({
     message: `Check live gold & silver rates:\n${url}`,
