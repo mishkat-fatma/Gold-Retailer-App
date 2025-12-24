@@ -17,7 +17,8 @@ const DEFAULT_MAKING_LABELS = {
 export function useLiveRates() {
   const [baseRates, setBaseRates] = useState<any>(null);
 
-  const [config, setConfig] = useState<any>(null);
+  const [savedConfig, setSavedConfig] = useState<any>(null);
+
   const [rates, setRates] = useState<any>(null);
   const [configLoaded, setConfigLoaded] = useState(false);
 
@@ -33,41 +34,43 @@ export function useLiveRates() {
   /* 🔐 USER CONFIG LISTENER */
   useEffect(() => {
     if (!user) {
-  setConfig({});
+  setSavedConfig(null);
   setConfigLoaded(true);
   return;
 }
+
 
 
     const ref = doc(db, "users", user.uid, "config", "shop");
 
     return onSnapshot(ref, (snap) => {
   if (!snap.exists()) {
-    setConfig({});
+    setSavedConfig({});
+
     setConfigLoaded(true);
     return;
   }
 
   const data = snap.data();
 
-  setConfig({
-    ...data,
-    making:
-      data.making && typeof data.making === "object"
-        ? data.making
-        : {
-            gold999: { enabled: false, type: "percent", value: 0 },
-            gold916: { enabled: false, type: "percent", value: 0 },
-            silver999: { enabled: false, type: "perGram", value: 0 },
-            silver925: { enabled: false, type: "perGram", value: 0 },
-          },
+  setSavedConfig({
+  ...data,
+  making:
+    data.making && typeof data.making === "object"
+      ? data.making
+      : {
+          gold999: { enabled: false, type: "percent", value: 0 },
+          gold916: { enabled: false, type: "percent", value: 0 },
+          silver999: { enabled: false, type: "perGram", value: 0 },
+          silver925: { enabled: false, type: "perGram", value: 0 },
+        },
 
-    makingLabels:
+  makingLabels:
     data.makingLabels && typeof data.makingLabels === "object"
       ? data.makingLabels
       : DEFAULT_MAKING_LABELS,
-      
-  });
+});
+
 
   setConfigLoaded(true);
 });
@@ -94,9 +97,11 @@ export function useLiveRates() {
 
   /* 💰 COMPUTE RATES */
   useEffect(() => {
-    if (!data?.sell_price_999 || !config) return;
+    if (!data?.sell_price_999 || !savedConfig) return;
 
-    if (config.frozen) return;
+
+    if (savedConfig.frozen) return;
+
 
     const gold999 = data.sell_price_999;
     const gold916 = gold999 * 0.916;
@@ -113,24 +118,24 @@ export function useLiveRates() {
 
     const computed = {
   gold999: applyMaking(
-    gold999 + (config.margins?.gold999 || 0),
+    gold999 + (savedConfig.margins?.gold999 || 0),
     "gold999",
-    config
+    savedConfig
   ),
   gold916: applyMaking(
-    gold916 + (config.margins?.gold916 || 0),
+    gold916 + (savedConfig.margins?.gold916 || 0),
     "gold916",
-    config
+    savedConfig
   ),
   silver999: applyMaking(
-    silver999 + (config.margins?.silver999 || 0),
+    silver999 + (savedConfig.margins?.silver999 || 0),
     "silver999",
-    config
+    savedConfig
   ),
   silver925: applyMaking(
-    silver925 + (config.margins?.silver925 || 0),
+    silver925 + (savedConfig.margins?.silver925 || 0),
     "silver925",
-    config
+    savedConfig
   ),
   timestamp: Date.now(),
 };
@@ -141,13 +146,14 @@ export function useLiveRates() {
 
 
 
-  }, [data, config, user]);
+  }, [data, savedConfig, user]);
 
   return {
-  rates: config?.frozen ? config?.frozenRates : rates,
+  rates: savedConfig?.frozen ? savedConfig?.frozenRates : rates,
   baseRates,
-  config,
+  savedConfig,
   configLoaded,
 };
+
 
 }

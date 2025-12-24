@@ -69,7 +69,8 @@ const computeRatesFromConfig = (base: any, cfg: any) => {
   };
 };
 
-const config = isPreview ? previewConfig : live.config;
+const config = isPreview ? previewConfig : live.savedConfig;
+
 
 const rates = isPreview
   ? computeRatesFromConfig(live.baseRates, previewConfig)

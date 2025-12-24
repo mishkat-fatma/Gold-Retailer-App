@@ -3,5 +3,8 @@
     "source.fixAll": "explicit",
     "source.organizeImports": "explicit",
     "source.sortMembers": "explicit"
-  }
+  },
+
+  "json.schemaDownload.enable": true,
+  "json.schemaDownload.timeout": 5000
 }
