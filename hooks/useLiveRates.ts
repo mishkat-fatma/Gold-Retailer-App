@@ -14,7 +14,8 @@ const DEFAULT_MAKING_LABELS = {
   silver925: "Making Charges",
 };
 
-export function useLiveRates() {
+export function useLiveRates(publicShopId?: string) {
+
   const [baseRates, setBaseRates] = useState<any>(null);
 
   const [savedConfig, setSavedConfig] = useState<any>(null);
@@ -24,7 +25,10 @@ export function useLiveRates() {
 
 
   const auth = getAuth();
-  const user = auth.currentUser;
+  const user = publicShopId
+  ? { uid: publicShopId }
+  : auth.currentUser;
+
   
   const { data } = useWebSocket(
     "live.karatpay.in",

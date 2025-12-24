@@ -35,17 +35,26 @@ const DEFAULT_LABELS: Record<MetalKey, string> = {
 
 export default function RateDisplay({
   previewConfig,
+  publicShopId,
 }: {
   previewConfig?: any;
+  publicShopId?: string;
 }) {
 
+
   const auth = getAuth();
-  if (!auth.currentUser && !previewConfig){
+if (!auth.currentUser && !previewConfig && !publicShopId) {
   return <Redirect href="/login" />;
-  }
+}
+
 
 const isPreview = !!previewConfig;
-const live = useLiveRates();
+const live = useLiveRates(publicShopId);
+
+const config = isPreview
+  ? previewConfig
+  : live.savedConfig;
+
 
 
 
@@ -69,16 +78,36 @@ const computeRatesFromConfig = (base: any, cfg: any) => {
   };
 };
 
-const config = isPreview ? previewConfig : live.savedConfig;
+
 
 
 const rates = isPreview
   ? computeRatesFromConfig(live.baseRates, previewConfig)
   : live.rates;
 
-const effectiveConfig = isPreview
-  ? { ...config, frozen: false }
-  : config;
+const effectiveConfig = {
+  // defaults (NEVER disappear)
+  shopName: "",
+  logoUrl: "",
+  contact: {
+    address: "",
+    phones: [],
+    email: "",
+  },
+  displayColors: {
+    background: "#070a12",
+    text: "#ffffff",
+    price: "#D4AF37",
+    cardBorder: "#2a2d35",
+  },
+
+  // saved / preview data overrides defaults
+  ...(config || {}),
+
+  // preview should never freeze
+  frozen: isPreview ? false : config?.frozen,
+};
+
 
 
 
@@ -101,17 +130,16 @@ const [now, setNow] = useState(new Date());
     if (rates) prevRates.current = rates;
   }, [rates]);
 
-  if (!config || !rates) {
+  if (!live.configLoaded || !rates) {
   return (
     <View style={styles.center}>
       <Text style={{ color: "#fff" }}>
-        {isPreview
-          ? "Waiting for live price…"
-          : "Loading rates…"}
+        Loading rates…
       </Text>
     </View>
   );
 }
+
 
 
 
@@ -173,10 +201,15 @@ const getMakingText = (key: MetalKey) => {
 
   /* ================= SHARE ================= */
  const onShare = async () => {
-  const user = getAuth().currentUser;
-  if (!user) return;
+  const shopId =
+    publicShopId || getAuth().currentUser?.uid;
 
-  const url = `https://gold-retailer-app.vercel.app/view?shopId=${user.uid}`;
+  if (!shopId) {
+    Alert.alert("Error", "Unable to generate share link");
+    return;
+  }
+
+  const url = `https://gold-retailer-app.vercel.app/view?shopId=${shopId}`;
 
   await Share.share({
     message: `Check live gold & silver rates:\n${url}`,
