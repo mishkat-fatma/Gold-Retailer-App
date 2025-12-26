@@ -15,7 +15,10 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useLiveRates } from "../hooks/useLiveRates";
 
+
 const { width } = Dimensions.get("window");
+
+
 
 type MetalKey = "gold999" | "gold916" | "silver999" | "silver925";
 
@@ -116,15 +119,9 @@ const effectiveConfig = {
 
 
 const prevRates = useRef<any>(null);
-const [now, setNow] = useState(new Date());
 
 
-  
-  /* ================= CLOCK ================= */
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
+
 
   useEffect(() => {
     if (rates) prevRates.current = rates;
@@ -139,9 +136,6 @@ const [now, setNow] = useState(new Date());
     </View>
   );
 }
-
-
-
 
 
 
@@ -227,6 +221,9 @@ const getMakingText = (key: MetalKey) => {
       contentContainerStyle={{ paddingBottom: 40 }}
       showsVerticalScrollIndicator={false}
     >
+
+     
+
       {/* ================= HEADER ================= */}
       <View
         style={[
@@ -235,23 +232,9 @@ const getMakingText = (key: MetalKey) => {
         ]}
       >
         <View>
-          <Text
-            style={[
-              styles.headerTitle,
-              {
-                color: c.text || "#fff",
-                fontFamily: font,
-              },
-            ]}
-          >
-            Live Bullion Rates
-          </Text>
+          
 
-          {d.showTime !== false && (
-            <Text style={[styles.time, { color: c.text || "#aaa" }]}>
-              Updated: {now.toLocaleTimeString()}
-            </Text>
-          )}
+         
         </View>
 
         <TouchableOpacity onPress={onShare}>
@@ -293,76 +276,73 @@ const getMakingText = (key: MetalKey) => {
       )}
 
       {/* ================= RATE CARDS ================= */}
-      <View style={{ gap: densityGap }}>
-        {METALS.map((key) => {
-          if (d.rows?.[key] === false) return null;
+<View style={{ gap: densityGap }}>
+  {METALS.map((key) => {
+    if (d.rows?.[key] === false) return null;
 
-          const current = rates?.[key];
-          if (current == null) return null;
+    const current = rates?.[key];
+    if (current == null) return null;
 
-          const prev = prevRates.current?.[key];
-          const diff = prev !== undefined ? current - prev : 0;
+    const prev = prevRates.current?.[key];
+    const diff = prev !== undefined ? current - prev : 0;
 
-          return (
-            <View
-              style={[
-                styles.card,
-                {
-                  backgroundColor:
-                    d.layout === "minimal" ? "transparent" : "#FFFFFF",
-                  borderRadius: card.radius ?? 20,
-                  borderColor: c.cardBorder || "transparent",
-                  borderWidth: c.cardBorder ? 1 : 0,
-                  padding: densityGap,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.metal,
-                  {
-                    color: c.text || "#aaa",
-                    fontFamily: font,
-                  },
-                ]}
-              >
-                {effectiveConfig.labels?.[key] || DEFAULT_LABELS[key]}
-              </Text>
+    return (
+      <View
+        key={key}
+        style={[
+          styles.card,
+          {
+            backgroundColor:
+              d.layout === "minimal" ? "transparent" : "#FFFFFF",
+            borderRadius: card.radius ?? 20,
+            borderColor: c.cardBorder || "transparent",
+            borderWidth: c.cardBorder ? 1 : 0,
+            padding: Math.max(10, densityGap - 6),
+          },
+        ]}
+      >
+        <Text
+          style={[
+            styles.metal,
+            { color: c.text || "#aaa", fontFamily: font },
+          ]}
+        >
+          {effectiveConfig.labels?.[key] || DEFAULT_LABELS[key]}
+        </Text>
 
-              <Text
-                style={[
-                  styles.price,
-                  {
-                    color: c.price || "#D4AF37",
-                    fontFamily: font,
-                  },
-                ]}
-              >
-                ₹{current.toFixed(precision)}
-              </Text>
+        <Text
+          style={[
+            styles.price,
+            { color: c.price || "#D4AF37", fontFamily: font },
+          ]}
+        >
+          ₹{current.toFixed(precision)}
+        </Text>
 
-              {getMakingText(key) && (
-                <Text style={styles.making}>
-                  {getMakingText(key)}
-                </Text>
-              )}
+        {getMakingText(key) && (
+          <Text style={styles.making}>
+            {getMakingText(key)}
+          </Text>
+        )}
 
-
-              {diff !== 0 && (
-                <Text
-                  style={[
-                    styles.change,
-                    { color: diff > 0 ? "#2ecc71" : "#e74c3c" },
-                  ]}
-                >
-                  {diff > 0 ? "▲" : "▼"}{" "}
-                  {Math.abs(diff).toFixed(precision)}
-                </Text>
-              )}
-            </View>
-          );
-        })}
+        {diff !== 0 && (
+          <Text
+            style={[
+              styles.change,
+              { color: diff > 0 ? "#2ecc71" : "#e74c3c" },
+            ]}
+          >
+            {diff > 0 ? "▲" : "▼"}{" "}
+            {Math.abs(diff).toFixed(precision)}
+          </Text>
+        )}
       </View>
+    );
+  })}
+</View>
+
+
+
       {/* ================= NOTIFICATIONS ================= */}
 {enabledNotifications.length > 0 && (
   <View style={styles.notificationsWrap}>
@@ -413,56 +393,50 @@ const getMakingText = (key: MetalKey) => {
         </View>
       )}
 
-      {/* ================= FOOTER CONTACT ================= */}
+{/* ================= FOOTER CONTACT ================= */}
 {effectiveConfig.contact &&
   (effectiveConfig.contact.address ||
     effectiveConfig.contact.email ||
     effectiveConfig.contact.phones?.some(Boolean)) && (
     <View
-  style={[
-    styles.footer,
-    { borderColor: c.cardBorder || "#E5E7EB" },
-  ]}
->
-
-      <View style={styles.footerBlock}>
-        <Text style={[styles.footerTitle, { color: c.text }]}>
-  Address
-</Text>
-<Text style={[styles.footerText, { color: c.text }]}>
-  {effectiveConfig.contact.address}
-</Text>
-
-      </View>
-
-      <View style={styles.footerBlock}>
-        <Text style={[styles.footerTitle, { color: c.text }]}>
-  Phone
-</Text>
-{effectiveConfig.contact.phones
-  ?.filter(Boolean)
-  .map((p: string, i: number) => (
-    <Text
-      key={i}
-      style={[styles.footerText, { color: c.text }]}
+      style={[
+        styles.footer,
+        {
+          borderColor: c.cardBorder || "#E5E7EB",
+          alignItems: "center",
+        },
+      ]}
     >
-      {p}
-    </Text>
-))}
+      {effectiveConfig.contact.address ? (
+        <Text style={[styles.footerLine, { color: c.text }]}>
+          📍 {effectiveConfig.contact.address}
+        </Text>
+      ) : null}
 
-      </View>
+      {effectiveConfig.contact.phones
+        ?.filter(Boolean)
+        .map((p: string, i: number) => (
+          <Text
+            key={i}
+            style={[styles.footerLine, { color: c.text }]}
+          >
+            📞 {p}
+          </Text>
+        ))}
 
-      <View style={styles.footerBlock}>
-        <Text style={[styles.footerTitle, { color: c.text }]}>
-  Email
-</Text>
-<Text style={[styles.footerText, { color: c.text  }]}>
-  {effectiveConfig.contact.email}
-</Text>
+      {effectiveConfig.contact.email ? (
+        <Text style={[styles.footerLine, { color: c.text }]}>
+          ✉️ {effectiveConfig.contact.email}
+        </Text>
+      ) : null}
 
-      </View>
+      {/* Powered by */}
+      <Text style={styles.poweredBy}>
+        Powered by <Text style={{ fontWeight: "800" }}>KaratPay</Text>
+      </Text>
     </View>
 )}
+
     </ScrollView>
   );
 }
@@ -476,19 +450,23 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   notificationsWrap: {
-  marginTop: 30,
-  gap: 12,
+  marginTop: 14,
+  gap: 8,
 },
 
 notificationCard: {
   flexDirection: "row",
   alignItems: "center",
   gap: 10,
-  paddingVertical: 12,
+  paddingVertical: 10,
   paddingHorizontal: 14,
   borderRadius: 14,
-  backgroundColor: "transparent",
   borderWidth: 1,
+  shadowColor: "#000",
+  shadowOpacity: 0.12,
+  shadowRadius: 6,
+  shadowOffset: { width: 0, height: 3 },
+  elevation: 3,
 },
 
 notificationText: {
@@ -514,25 +492,18 @@ notificationText: {
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: "900",
-  },
-  time: {
-    fontSize: 12,
-    marginTop: 4,
-  },
+
   branding: {
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom:10,
   },
   logo: {
   width: "100%",
   maxWidth: 520,        
-  height: 260,          
+  height: 150,          
   resizeMode: "contain",
   alignSelf: "center",
-  marginBottom: 16,
+  marginBottom: 8,
 },
 
 
@@ -541,18 +512,28 @@ notificationText: {
     fontWeight: "900",
   },
   card: {
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 8,
-  },
+  shadowColor: "#000",
+  shadowOpacity: 0.18,
+  shadowRadius: 8,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 6,
+  borderRadius: 18,
+  paddingVertical: 10,     
+},
+
   metal: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
+  fontSize: 13,
+  fontWeight: "700",
+  letterSpacing: 0.5,
+  marginBottom: 2,
+},
   price: {
-    fontSize: 34,
+    fontSize: 25,
     fontWeight: "900",
-    marginTop: 10,
+    marginTop: 6,
+    textShadowColor: "rgba(0,0,0,0.25)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   change: {
     marginTop: 6,
@@ -567,25 +548,31 @@ notificationText: {
     gap: 8,
   },
   footer: {
-  marginTop: 40,
-  paddingTop: 20,
+  marginTop: 16,
+  paddingTop: 5,
   borderTopWidth: 1,
-  borderColor: "#E5E7EB",
-  gap: 20,
+  gap: 10,
 },
 
-footerBlock: {
-  gap: 6,
-},
-
-footerTitle: {
-  fontSize: 13,
-  fontWeight: "700",
-},
-
-footerText: {
+footerLine: {
   fontSize: 14,
-  lineHeight: 20,
+  fontWeight: "500",
+  textAlign: "center",
+  lineHeight: 22,
 },
+
+poweredBy: {
+  marginTop: 10,
+  fontSize: 12,
+  color: "rgba(60, 60, 60, 1)",
+  textAlign: "center",
+},
+
+
+
+
+
+
+
 
 });

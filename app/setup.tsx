@@ -312,9 +312,23 @@ const applyRandomTheme = () => {
 
 
   return (
-    <View style={[styles.page, styles.layout]}>
+    <View style={styles.page}>
+
       {/* ================= LEFT ================= */}
-      <ScrollView style={styles.left} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+
+        {/* ================= LIVE PREVIEW ================= */}
+<View style={styles.previewWrap}>
+  <Text style={styles.previewTitle}>Live Preview</Text>
+
+  <View style={styles.previewCard}>
+  <View style={{ maxHeight: 420 }}>
+    <RateDisplay previewConfig={config} />
+  </View>
+</View>
+
+</View>
+
         {/* ================= TABS ================= */}
         <View style={styles.tabs}>
           {["profile", "rates", "theme"].map((t) => (
@@ -857,11 +871,7 @@ const applyRandomTheme = () => {
 
       </ScrollView>
 
-      {/* ================= RIGHT ================= */}
-      <View style={styles.right}>
-        <Text style={styles.previewTitle}>Live Preview</Text>
-        <RateDisplay previewConfig={config} />
-      </View>
+      
     </View>
   );
 }
@@ -869,9 +879,6 @@ const applyRandomTheme = () => {
 /* ================= STYLES ================= */
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: "#F9FAFB", padding: 20 },
-  layout: { flexDirection: "row", gap: 16 },
-  left: { flex: 1 },
-  right: { width: 420 },
   card: {
     backgroundColor: "#FBF3E6",
     paddingHorizontal: 20,
@@ -923,11 +930,7 @@ tabActive: {
 
   tabText: { color: "#374151", fontWeight: "700" },
   tabTextActive: { color: "#4338CA" },
-  previewTitle: {
-    color: "#9aa0aa",
-    marginBottom: 8,
-    fontWeight: "700",
-  },
+
 
   uploadBtn: {
   backgroundColor: "#1c1f26",
@@ -1036,7 +1039,7 @@ active: {
 },
 
 toggleText: {
-  color: "#fff",
+  color: "black",
   fontWeight: "600",
 },
 
@@ -1064,6 +1067,31 @@ presetText: {
   color: "#111827",
   fontSize: 13,
   fontWeight: "700",
+},
+
+previewWrap: {
+  marginBottom: 28,
+},
+
+previewTitle: {
+  fontSize: 12,
+  fontWeight: "900",
+  color: "#C9A227",
+  letterSpacing: 1.5,
+  textAlign: "center",
+  marginBottom: 10,
+},
+
+
+
+previewCard: {
+  borderRadius: 16,
+  overflow: "hidden",
+  borderWidth: 1,
+  borderColor: "#E5E7EB",
+  backgroundColor: "#FFFFFF",
+
+  
 },
 
 
