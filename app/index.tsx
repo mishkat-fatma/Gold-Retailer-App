@@ -95,10 +95,10 @@ const effectiveConfig = {
     email: "",
   },
   displayColors: {
-    background: "#070a12",
-    text: "#ffffff",
-    price: "#D4AF37",
-    cardBorder: "#2a2d35",
+    background: "#FFFFFF",
+    text: "#111827",
+    price: "#C9A227",
+    cardBorder: "#E5E7EB",
   },
 
   // saved / preview data overrides defaults
@@ -133,7 +133,7 @@ const [now, setNow] = useState(new Date());
   if (!live.configLoaded || !rates) {
   return (
     <View style={styles.center}>
-      <Text style={{ color: "#fff" }}>
+      <Text style={{ color: "#111827" }}>
         Loading rates…
       </Text>
     </View>
@@ -258,7 +258,7 @@ const getMakingText = (key: MetalKey) => {
           <Ionicons
             name="share-social"
             size={22}
-            color={c.price || "#D4AF37"}
+            color={c.text || "#D4AF37"}
           />
         </TouchableOpacity>
       </View>
@@ -309,7 +309,7 @@ const getMakingText = (key: MetalKey) => {
                 styles.card,
                 {
                   backgroundColor:
-                    d.layout === "minimal" ? "transparent" : "#111622",
+                    d.layout === "minimal" ? "transparent" : "#FFFFFF",
                   borderRadius: card.radius ?? 20,
                   borderColor: c.cardBorder || "transparent",
                   borderWidth: c.cardBorder ? 1 : 0,
@@ -367,16 +367,23 @@ const getMakingText = (key: MetalKey) => {
 {enabledNotifications.length > 0 && (
   <View style={styles.notificationsWrap}>
     {enabledNotifications.map((item: any, index: number) => (
-      <View key={index} style={styles.notificationCard}>
+      <View
+        key={index}
+        style={[
+          styles.notificationCard,
+          { borderColor: c.cardBorder || "#E5E7EB" },
+        ]}
+      >
         <Ionicons
           name="notifications"
           size={16}
-          color={c.price || "#D4AF37"}
+          color={c.text || "#111827"}
         />
+
         <Text
           style={[
             styles.notificationText,
-            { color: c.text || "#fff" },
+            { color: c.text || "#111827" },
           ]}
         >
           {item.text}
@@ -385,6 +392,7 @@ const getMakingText = (key: MetalKey) => {
     ))}
   </View>
 )}
+
 
       {/* ================= FREEZE ================= */}
       {effectiveConfig.frozen && (
@@ -410,30 +418,48 @@ const getMakingText = (key: MetalKey) => {
   (effectiveConfig.contact.address ||
     effectiveConfig.contact.email ||
     effectiveConfig.contact.phones?.some(Boolean)) && (
-    <View style={styles.footer}>
+    <View
+  style={[
+    styles.footer,
+    { borderColor: c.cardBorder || "#E5E7EB" },
+  ]}
+>
+
       <View style={styles.footerBlock}>
-        <Text style={styles.footerTitle}>Address</Text>
-        <Text style={styles.footerText}>
-          {effectiveConfig.contact.address}
-        </Text>
+        <Text style={[styles.footerTitle, { color: c.text }]}>
+  Address
+</Text>
+<Text style={[styles.footerText, { color: c.text }]}>
+  {effectiveConfig.contact.address}
+</Text>
+
       </View>
 
       <View style={styles.footerBlock}>
-        <Text style={styles.footerTitle}>Phone</Text>
-        {effectiveConfig.contact.phones
-          ?.filter(Boolean)
-          .map((p: string, i: number) => (
-            <Text key={i} style={styles.footerText}>
-              {p}
-            </Text>
-          ))}
+        <Text style={[styles.footerTitle, { color: c.text }]}>
+  Phone
+</Text>
+{effectiveConfig.contact.phones
+  ?.filter(Boolean)
+  .map((p: string, i: number) => (
+    <Text
+      key={i}
+      style={[styles.footerText, { color: c.text }]}
+    >
+      {p}
+    </Text>
+))}
+
       </View>
 
       <View style={styles.footerBlock}>
-        <Text style={styles.footerTitle}>Email</Text>
-        <Text style={styles.footerText}>
-          {effectiveConfig.contact.email}
-        </Text>
+        <Text style={[styles.footerTitle, { color: c.text }]}>
+  Email
+</Text>
+<Text style={[styles.footerText, { color: c.text  }]}>
+  {effectiveConfig.contact.email}
+</Text>
+
       </View>
     </View>
 )}
@@ -461,9 +487,8 @@ notificationCard: {
   paddingVertical: 12,
   paddingHorizontal: 14,
   borderRadius: 14,
-  backgroundColor: "#121620",
+  backgroundColor: "transparent",
   borderWidth: 1,
-  borderColor: "transparent",
 },
 
 notificationText: {
@@ -476,12 +501,12 @@ notificationText: {
   marginTop: 4,
   fontSize: 13,
   fontWeight: "600",
-  color: "#9aa0aa",
+  color: "black",
 },
 
   center: {
     flex: 1,
-    backgroundColor: "#070a12",
+    backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -545,7 +570,7 @@ notificationText: {
   marginTop: 40,
   paddingTop: 20,
   borderTopWidth: 1,
-  borderColor: "#1f2430",
+  borderColor: "#E5E7EB",
   gap: 20,
 },
 
@@ -554,13 +579,11 @@ footerBlock: {
 },
 
 footerTitle: {
-  color: "#9aa0aa",
   fontSize: 13,
   fontWeight: "700",
 },
 
 footerText: {
-  color: "#fff",
   fontSize: 14,
   lineHeight: 20,
 },

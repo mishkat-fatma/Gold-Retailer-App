@@ -104,18 +104,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     padding: 24,
-    backgroundColor: "#030303ff",
+    backgroundColor: "#F8FAFC",
   },
   title: {
     fontSize: 28,
-    fontWeight: "700",
+    fontWeight: "800",
     textAlign: "center",
-    color: "#878181ff",
+    color: "#111827",
     marginBottom: 6,
   },
   subtitle: {
     textAlign: "center",
-    color: "white",
+    color: "#4B5563",
     marginBottom: 24,
   },
   input: {

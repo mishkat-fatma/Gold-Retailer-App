@@ -31,7 +31,7 @@ export default function PublicRateView() {
 
   if (exists === null) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" }}>
+      <View style={{ flex: 1, backgroundColor: "#FFFFFF", justifyContent: "center", alignItems: "center" }}>
         <Text style={{ color: "#fff" }}>Loading live rates…</Text>
       </View>
     );

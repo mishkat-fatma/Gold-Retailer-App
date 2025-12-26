@@ -166,7 +166,7 @@ export default function Dashboard() {
 
       {/* LOGOUT */}
       <TouchableOpacity
-        style={[styles.logout, { backgroundColor: ACCENT }]}
+        style={[styles.logout, { backgroundColor: "rgba(255, 0, 0, 0.85)" }]}
         onPress={async () => {
           await signOut(getAuth());
           router.replace("/login");
@@ -212,7 +212,7 @@ function NeonCard({ children, onPress, color }: any) {
 const styles = StyleSheet.create({
   intro: {
     flex: 1,
-    backgroundColor: "#05070c",
+    backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -224,10 +224,10 @@ const styles = StyleSheet.create({
     opacity: 0.35,
   },
   gold: { backgroundColor: "#f5c16c" },
-  silver: { backgroundColor: "#cfd6df" },
+  silver: { backgroundColor: "#62666aff" },
 
   introText: {
-    color: "#f5c16c",
+    color: "black",
     fontSize: 38,
     fontWeight: "900",
     letterSpacing: 3,
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     justifyContent: "center",
-    backgroundColor: "#070a12",
+    backgroundColor: "#F9FAFB",
   },
 
   neonWash: {
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     left: -200,
     right: -200,
     bottom: -200,
-    opacity: 0.07,
+    opacity: 0.04,
   },
 
   title: {
@@ -258,26 +258,27 @@ const styles = StyleSheet.create({
 
   card: {
     height: height * 0.28,
-    backgroundColor: "#141824",
-    borderRadius: 34,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 28,
     marginBottom: 26,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1.5,
-    shadowOpacity: 0.45,
-    shadowRadius: 28,
-    elevation: 18,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowOpacity: 0.15,
+    shadowRadius: 18,
+    elevation: 6,
   },
 
   cardTitle: {
-    color: "#fff",
+    color: "#111827",
     fontSize: 26,
     fontWeight: "900",
     marginTop: 16,
   },
 
   cardDesc: {
-    color: "#9aa0aa",
+    color: "#6B7280",
     marginTop: 6,
   },
 
