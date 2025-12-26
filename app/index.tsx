@@ -222,7 +222,7 @@ const getMakingText = (key: MetalKey) => {
     <ScrollView
       style={[
         styles.page,
-        { backgroundColor: c.background || "#070a12" },
+        { backgroundColor: c.background || "white" },
       ]}
       contentContainerStyle={{ paddingBottom: 40 }}
       showsVerticalScrollIndicator={false}
