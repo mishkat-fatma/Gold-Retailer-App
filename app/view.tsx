@@ -38,5 +38,18 @@ export default function PublicRateView() {
   }
 
   
-  return <RateDisplay publicShopId={shopId} />;
+  return (
+  <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+    <View
+      style={{
+        width: "100%",
+        maxWidth: 480,          // 🔥 key
+        alignSelf: "center",
+      }}
+    >
+      <RateDisplay publicShopId={shopId} />
+    </View>
+  </View>
+);
+
 }

@@ -183,50 +183,45 @@ export default function Setup() {
 
    /* ================= IMAGE PICKER ================= */
    const pickLogo = async () => {
-    if (Platform.OS !== "web") {
-      const permission =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert("Permission required");
-        return;
-      }
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: Platform.OS !== "web",
-      aspect: [1, 1],
-      quality: 0.8,
-      base64: Platform.OS !== "web",
-    });
-
-    if (result.canceled) return;
-    const asset = result.assets[0];
-
-    // WEB → use URI
-    if (Platform.OS === "web") {
-      setConfig({ ...config, logoUrl: asset.uri });
+  if (Platform.OS !== "web") {
+    const permission =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission required");
       return;
     }
+  }
 
-    // MOBILE → base64
-    if (!asset.base64) {
-      Alert.alert("Failed to read image");
-      return;
-    }
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: Platform.OS !== "web",
+    aspect: [1, 1],
+    quality: 0.8,
+    base64: true,
+  });
 
-    const sizeKB = (asset.base64.length * 0.75) / 1024;
-    if (sizeKB > 500) {
-      Alert.alert("Logo must be under 500 KB");
-      return;
-    }
+  if (result.canceled) return;
+  const asset = result.assets[0];
 
-    const mime = asset.mimeType || "image/jpeg";
-    setConfig({
-      ...config,
-      logoUrl: `data:${mime};base64,${asset.base64}`,
-    });
-  };
+  if (!asset.base64) {
+    Alert.alert("Failed to read image");
+    return;
+  }
+
+  const sizeKB = (asset.base64.length * 0.75) / 1024;
+  if (sizeKB > 500) {
+    Alert.alert("Logo must be under 500 KB");
+    return;
+  }
+
+  const mime = asset.mimeType || "image/jpeg";
+
+  setConfig({
+    ...config,
+    logoUrl: `data:${mime};base64,${asset.base64}`,
+  });
+};
+
 
     /* ================= SNAPSHOT ================= */
 useEffect(() => {
@@ -361,34 +356,12 @@ const applyRandomTheme = () => {
       />
 
       <TouchableOpacity
-        style={styles.uploadBtn}
-        onPress={async () => {
-          const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: Platform.OS !== "web",
-            aspect: [1, 1],
-            quality: 0.8,
-            base64: Platform.OS !== "web",
-          });
+  style={styles.uploadBtn}
+  onPress={pickLogo}
+>
+  <Text style={styles.uploadText}>Upload Shop Logo</Text>
+</TouchableOpacity>
 
-          if (result.canceled) return;
-          const asset = result.assets[0];
-
-          if (Platform.OS === "web") {
-            setConfig({ ...config, logoUrl: asset.uri });
-            return;
-          }
-
-          if (!asset.base64) return;
-
-          setConfig({
-            ...config,
-            logoUrl: `data:image/jpeg;base64,${asset.base64}`,
-          });
-        }}
-      >
-        <Text style={styles.uploadText}>Upload Shop Logo</Text>
-      </TouchableOpacity>
 
       {config.logoUrl ? (
         <>

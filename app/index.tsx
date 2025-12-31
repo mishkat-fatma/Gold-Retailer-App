@@ -218,7 +218,7 @@ const getMakingText = (key: MetalKey) => {
         styles.page,
         { backgroundColor: c.background || "white" },
       ]}
-      contentContainerStyle={{ paddingBottom: 40 }}
+      contentContainerStyle={{ paddingBottom: 40,  width: "100%",}}
       showsVerticalScrollIndicator={false}
     >
 
@@ -276,7 +276,8 @@ const getMakingText = (key: MetalKey) => {
       )}
 
       {/* ================= RATE CARDS ================= */}
-<View style={{ gap: densityGap }}>
+<View style={styles.grid}>
+
   {METALS.map((key) => {
     if (d.rows?.[key] === false) return null;
 
@@ -287,20 +288,23 @@ const getMakingText = (key: MetalKey) => {
     const diff = prev !== undefined ? current - prev : 0;
 
     return (
-      <View
-        key={key}
-        style={[
-          styles.card,
-          {
-            backgroundColor:
-              d.layout === "minimal" ? "transparent" : "#FFFFFF",
-            borderRadius: card.radius ?? 20,
-            borderColor: c.cardBorder || "transparent",
-            borderWidth: c.cardBorder ? 1 : 0,
-            padding: Math.max(10, densityGap - 6),
-          },
-        ]}
-      >
+     <View
+  key={key}
+  style={[
+    styles.card,
+    styles.halfCard,
+    {
+      backgroundColor:
+        d.layout === "minimal" ? "transparent" : "#FFFFFF",
+      borderRadius: card.radius ?? 18,
+      borderColor: c.cardBorder || "transparent",
+      borderWidth: c.cardBorder ? 1 : 0,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+    },
+  ]}
+>
+
         <Text
           style={[
             styles.metal,
@@ -310,32 +314,29 @@ const getMakingText = (key: MetalKey) => {
           {effectiveConfig.labels?.[key] || DEFAULT_LABELS[key]}
         </Text>
 
-        <Text
-          style={[
-            styles.price,
-            { color: c.price || "#D4AF37", fontFamily: font },
-          ]}
-        >
-          ₹{current.toFixed(precision)}
-        </Text>
+       <View style={styles.priceRow}>
+  <Text
+    style={[
+      styles.price,
+      { color: c.price || "#D4AF37", fontFamily: font },
+    ]}
+  >
+    ₹{current.toFixed(precision)}
+  </Text>
 
-        {getMakingText(key) && (
-          <Text style={styles.making}>
-            {getMakingText(key)}
-          </Text>
-        )}
+  {diff !== 0 && (
+    <Text
+      style={[
+        styles.changeInline,
+        { color: diff > 0 ? "#2ecc71" : "#e74c3c" },
+      ]}
+    >
+      {diff > 0 ? "▲" : "▼"}
+      {Math.abs(diff).toFixed(precision)}
+    </Text>
+  )}
+</View>
 
-        {diff !== 0 && (
-          <Text
-            style={[
-              styles.change,
-              { color: diff > 0 ? "#2ecc71" : "#e74c3c" },
-            ]}
-          >
-            {diff > 0 ? "▲" : "▼"}{" "}
-            {Math.abs(diff).toFixed(precision)}
-          </Text>
-        )}
       </View>
     );
   })}
@@ -522,13 +523,13 @@ notificationText: {
 },
 
   metal: {
-  fontSize: 13,
+  fontSize: 12,
   fontWeight: "700",
   letterSpacing: 0.5,
   marginBottom: 2,
 },
   price: {
-    fontSize: 25,
+    fontSize: 22,
     fontWeight: "900",
     marginTop: 6,
     textShadowColor: "rgba(0,0,0,0.25)",
@@ -567,6 +568,30 @@ poweredBy: {
   color: "rgba(60, 60, 60, 1)",
   textAlign: "center",
 },
+
+priceRow: {
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 10,
+},
+
+changeInline: {
+  fontSize: 13,
+  fontWeight: "800",
+},
+
+grid: {
+  flexDirection: "row",
+  flexWrap: "wrap",
+  justifyContent: "space-between",
+  gap: 12,
+},
+
+halfCard: {
+  width: "48%",
+},
+
+
 
 
 
