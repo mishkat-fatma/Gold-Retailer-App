@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import useWebSocket from "./useWebSocket";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { getAuth } from "firebase/auth";
@@ -22,7 +21,7 @@ export function useLiveRates(publicShopId?: string) {
 
   const [rates, setRates] = useState<any>(null);
   const [configLoaded, setConfigLoaded] = useState(false);
-
+  const [data, setData] = useState<any>(null);
 
   const auth = getAuth();
   const user = publicShopId
@@ -30,10 +29,50 @@ export function useLiveRates(publicShopId?: string) {
   : auth.currentUser;
 
   
-  const { data } = useWebSocket(
-    "live.karatpay.in",
-    true
-  );
+  const API_KEY = "PASTE_YOUR_KEY_HERE";
+
+useEffect(() => {
+  const fetchRates = async () => {
+    try {
+      const res = await fetch(
+        `https://api.metals-api.com/v1/latest?access_key=${API_KEY}&base=INR&symbols=GOLD,SILVER`
+      );
+
+      const json = await res.json();
+
+console.log("API:", json); // add this
+
+if (!json.success) {
+  console.log("API failed");
+  return;
+}
+
+const goldRate = json.rates?.GOLD;
+const silverRate = json.rates?.SILVER;
+
+if (!goldRate || !silverRate) {
+  console.log("Rates missing");
+  return;
+}
+
+      const goldPerGram = (1 / goldRate) / 31.1035;
+const silverPerGram = (1 / silverRate) / 31.1035;
+
+      setData({
+        sell_price_999: goldPerGram,
+        silver_price: silverPerGram,
+      });
+
+    } catch (err) {
+      console.log("API error:", err);
+    }
+  };
+
+  fetchRates();
+  const interval = setInterval(fetchRates, 10000);
+
+  return () => clearInterval(interval);
+}, []);
 
   /* 🔐 USER CONFIG LISTENER */
   useEffect(() => {
@@ -101,15 +140,15 @@ export function useLiveRates(publicShopId?: string) {
 
   /* 💰 COMPUTE RATES */
   useEffect(() => {
-    if (!data?.sell_price_999 || !savedConfig) return;
+    if (!data?.sell_price_999) return;
 
 
-    if (savedConfig.frozen) return;
+    if (savedConfig?.frozen) return;
 
 
     const gold999 = data.sell_price_999;
     const gold916 = gold999 * 0.916;
-    const silver999 = gold999 / 100;
+    const silver999 = data.silver_price;
     const silver925 = silver999 * 0.925;
 
 
